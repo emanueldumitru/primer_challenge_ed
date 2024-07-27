@@ -1,4 +1,5 @@
 # Standard library usage
+import sys
 from typing import List, Dict
 import logging
 import json
@@ -62,11 +63,13 @@ def extract_wal_records_mapping(wal_file_path: str) -> Dict:
         return insert_wal_data_records_mapping
     except FileNotFoundError:
         logger.error(f"Error: The file {wal_file_path} was not found.")
+        sys.exit(1)
     except json.JSONDecodeError:
         logger.error(f"Error: The file {wal_file_path} contains invalid JSON.")
+        sys.exit(1)
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
-    return {}
+        sys.exit(1)
 
 
 # Processing input to gather metrics
@@ -194,13 +197,12 @@ def convert_to_json_or_string(value):
 
 
 # Store output
-def persist_metrics_data(metrics: Dict) -> None:
+def persist_metrics_data(metrics: Dict, db_file_path: str) -> None:
     """
 
     :param metrics Metrics mapping to be persisted, list of records and types
     :return:
     """
-    db_file_path = "metrics_datasource.db"
     # Insert metrics into the database
     conn = sqlite3.connect(db_file_path)
     try:
@@ -266,7 +268,7 @@ def insert_metrics_data(cursor, metrics: List[Dict]) -> None:
 
 
 def main():
-    wal_file_path = "resources/wal.json"
+    wal_file_path = "wal.json"
 
     # Extract wal records mapping
     wal_records_mapping = extract_wal_records_mapping(wal_file_path)
@@ -276,7 +278,7 @@ def main():
 
     # Persist metrics mapping to datasource
     logger.info("Persisting metrics data to db")
-    persist_metrics_data(metrics_mapping)
+    persist_metrics_data(metrics_mapping, db_file_path = "metrics_datasource.db")
 
 
 if __name__ == "__main__":
